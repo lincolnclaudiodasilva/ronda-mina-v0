@@ -1,0 +1,2035 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<title>Ronda de Mina — Infraestrutura e Drenagem</title>
+
+<!-- PWA: instalação e identidade do app -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0b2540">
+<meta name="description" content="Registro de ronda de infraestrutura e drenagem de mina, com avaliação do plano vigente e sugestão de atividades para o próximo plano.">
+
+<!-- iOS: comportamento de app instalado e ícone na tela inicial -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ronda de Mina">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+
+<!-- Android / Chrome: ícone e cor da splash screen -->
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
+
+<!-- Bibliotecas para exportação de fotos (.zip) e relatório (.pdf), tudo no próprio dispositivo -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<style>
+  :root{
+    --azul-900:#0b2540;
+    --azul-700:#133a63;
+    --azul-500:#2f5d8f;
+    --azul-100:#e8eef5;
+    --amarelo:#f5a623;
+    --amarelo-escuro:#c97f0e;
+    --vermelho:#c0392b;
+    --verde:#2e7d4f;
+    --cinza-900:#1c1f24;
+    --cinza-600:#5b6470;
+    --cinza-300:#cdd3da;
+    --cinza-100:#f4f6f8;
+    --branco:#ffffff;
+    --radius:10px;
+    font-size:16px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Segoe UI',Roboto,Arial,sans-serif;
+    background:var(--cinza-100);
+    color:var(--cinza-900);
+    padding-bottom:90px;
+  }
+  header{
+    background:linear-gradient(135deg,var(--azul-900),var(--azul-700));
+    color:#fff;
+    padding:18px 20px 16px;
+    position:sticky;
+    top:0;
+    z-index:50;
+    box-shadow:0 2px 10px rgba(0,0,0,.18);
+  }
+  header .top-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+  }
+  header .brand{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  header .brand .dot{
+    width:14px;height:14px;border-radius:50%;
+    background:var(--amarelo);
+    flex-shrink:0;
+  }
+  header h1{
+    font-size:17px;
+    margin:0;
+    font-weight:700;
+    letter-spacing:.2px;
+  }
+  header .sub{
+    font-size:12px;
+    opacity:.85;
+    margin-top:2px;
+  }
+  .count-badge{
+    background:rgba(255,255,255,.14);
+    border:1px solid rgba(255,255,255,.25);
+    border-radius:20px;
+    padding:5px 12px;
+    font-size:12.5px;
+    font-weight:600;
+    white-space:nowrap;
+  }
+
+  main{
+    max-width:720px;
+    margin:0 auto;
+    padding:16px 14px 30px;
+  }
+
+  .card{
+    background:var(--branco);
+    border-radius:var(--radius);
+    border:1px solid var(--cinza-300);
+    margin-bottom:16px;
+    overflow:hidden;
+  }
+  .card-head{
+    background:var(--azul-100);
+    padding:12px 16px;
+    font-weight:700;
+    font-size:13.5px;
+    color:var(--azul-900);
+    text-transform:uppercase;
+    letter-spacing:.4px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .card-body{
+    padding:16px;
+  }
+
+  label{
+    display:block;
+    font-size:13px;
+    font-weight:600;
+    color:var(--cinza-600);
+    margin-bottom:6px;
+  }
+  .field{
+    margin-bottom:14px;
+  }
+  .field:last-child{margin-bottom:0;}
+
+  input[type=text],
+  input[type=date],
+  input[type=time],
+  input[type=url],
+  select,
+  textarea{
+    width:100%;
+    padding:12px 12px;
+    border:1.5px solid var(--cinza-300);
+    border-radius:8px;
+    font-size:15px;
+    font-family:inherit;
+    background:#fff;
+    color:var(--cinza-900);
+    -webkit-appearance:none;
+    appearance:none;
+  }
+  input:focus, select:focus, textarea:focus{
+    outline:none;
+    border-color:var(--azul-500);
+    box-shadow:0 0 0 3px rgba(47,93,143,.15);
+  }
+  textarea{resize:vertical;min-height:64px;}
+
+  select{
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='9'><path d='M1 1l6 6 6-6' stroke='%235b6470' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    background-repeat:no-repeat;
+    background-position:right 14px center;
+    padding-right:34px;
+  }
+
+  .row2{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+  }
+  @media (max-width:480px){
+    .row2{grid-template-columns:1fr;}
+  }
+
+  .pill-group{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  .pill{
+    flex:1;
+    min-width:90px;
+    text-align:center;
+    padding:11px 8px;
+    border-radius:8px;
+    border:1.5px solid var(--cinza-300);
+    font-size:13.5px;
+    font-weight:600;
+    cursor:pointer;
+    background:#fff;
+    color:var(--cinza-600);
+    transition:all .12s ease;
+    user-select:none;
+  }
+  .pill input{display:none;}
+  .pill.status-conforme{border-color:#bfe3cc;}
+  .pill.status-conforme.selected{background:var(--verde);color:#fff;border-color:var(--verde);}
+  .pill.status-parcial{border-color:#fbdfb0;}
+  .pill.status-parcial.selected{background:var(--amarelo-escuro);color:#fff;border-color:var(--amarelo-escuro);}
+  .pill.status-nao-conforme{border-color:#e6bdb6;}
+  .pill.status-nao-conforme.selected{background:var(--vermelho);color:#fff;border-color:var(--vermelho);}
+  .pill.status-nao-verificado{border-color:var(--cinza-300);}
+  .pill.status-nao-verificado.selected{background:var(--cinza-600);color:#fff;border-color:var(--cinza-600);}
+
+  .pill-prior{
+    flex:1;
+    min-width:70px;
+    text-align:center;
+    padding:9px 6px;
+    border-radius:8px;
+    border:1.5px solid var(--cinza-300);
+    font-size:12.5px;
+    font-weight:700;
+    cursor:pointer;
+    background:#fff;
+    color:var(--cinza-600);
+    user-select:none;
+  }
+  .pill-prior input{display:none;}
+  .pill-prior.selected{background:var(--azul-700);color:#fff;border-color:var(--azul-700);}
+
+  .new-act-toggle{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:13px;
+    color:var(--azul-700);
+    font-weight:600;
+    cursor:pointer;
+    margin-top:4px;
+    user-select:none;
+  }
+  .new-act-toggle .chk{
+    width:18px;height:18px;border-radius:4px;border:1.5px solid var(--azul-500);
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .new-act-toggle .chk.on{background:var(--azul-700);border-color:var(--azul-700);}
+  .new-act-toggle .chk.on::after{content:"✓";color:#fff;font-size:12px;}
+
+  .hidden{display:none !important;}
+
+  .photo-row{
+    display:flex;
+    gap:8px;
+    align-items:stretch;
+  }
+  .photo-row input{flex:1;}
+  .photo-hint{
+    font-size:11.5px;
+    color:var(--cinza-600);
+    margin-top:6px;
+  }
+
+  .photo-counter{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    background:var(--azul-100);
+    color:var(--azul-700);
+    border-radius:6px;
+    padding:5px 10px;
+    font-size:12px;
+    font-weight:700;
+    margin-top:8px;
+  }
+
+  .photo-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:8px;
+    margin-top:12px;
+  }
+  .photo-thumb{
+    position:relative;
+    aspect-ratio:1;
+    border-radius:8px;
+    overflow:hidden;
+    border:1px solid var(--cinza-300);
+    background:var(--cinza-100);
+  }
+  .photo-thumb img{
+    width:100%;height:100%;object-fit:cover;display:block;
+  }
+  .photo-thumb .photo-del{
+    position:absolute;
+    top:4px;right:4px;
+    width:22px;height:22px;
+    border-radius:50%;
+    background:rgba(11,37,64,.75);
+    color:#fff;
+    border:none;
+    font-size:13px;
+    line-height:1;
+    cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .photo-thumb .photo-badge{
+    position:absolute;
+    bottom:4px;left:4px;
+    background:rgba(11,37,64,.75);
+    color:#fff;
+    font-size:9px;
+    font-weight:700;
+    padding:2px 5px;
+    border-radius:4px;
+  }
+  .gps-ok{color:var(--verde) !important;}
+  .gps-erro{color:var(--vermelho) !important;}
+
+  .btn{
+    width:100%;
+    padding:14px;
+    border-radius:9px;
+    border:none;
+    font-size:15px;
+    font-weight:700;
+    cursor:pointer;
+    letter-spacing:.2px;
+  }
+  .btn-primary{
+    background:var(--azul-700);
+    color:#fff;
+  }
+  .btn-primary:active{background:var(--azul-900);}
+  .btn-secondary{
+    background:#fff;
+    border:1.5px solid var(--azul-500);
+    color:var(--azul-700);
+  }
+  .btn-ghost{
+    background:transparent;
+    border:1.5px solid var(--cinza-300);
+    color:var(--cinza-600);
+  }
+  .btn-sm{padding:9px 14px;font-size:13px;width:auto;}
+  .btn-row{display:flex;gap:10px;margin-top:6px;}
+  .btn-row .btn{flex:1;}
+
+  .footer-bar{
+    position:fixed;
+    bottom:0;left:0;right:0;
+    background:#fff;
+    border-top:1px solid var(--cinza-300);
+    padding:10px 14px;
+    display:flex;
+    gap:10px;
+    box-shadow:0 -2px 10px rgba(0,0,0,.06);
+    z-index:50;
+  }
+  .footer-bar .btn{flex:1;}
+
+  .list-card{
+    background:#fff;
+    border:1px solid var(--cinza-300);
+    border-radius:9px;
+    padding:12px 14px;
+    margin-bottom:10px;
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    align-items:flex-start;
+  }
+  .list-card .info{flex:1;min-width:0;}
+  .list-card .li-title{
+    font-weight:700;
+    font-size:14px;
+    margin-bottom:3px;
+  }
+  .list-card .li-meta{
+    font-size:12px;
+    color:var(--cinza-600);
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    margin-top:4px;
+  }
+  .tag{
+    display:inline-block;
+    padding:2px 8px;
+    border-radius:5px;
+    font-size:11px;
+    font-weight:700;
+  }
+  .tag-conforme{background:#e3f3e8;color:var(--verde);}
+  .tag-parcial{background:#fdf0d8;color:var(--amarelo-escuro);}
+  .tag-nao-conforme{background:#f8e3e0;color:var(--vermelho);}
+  .tag-nao-verificado{background:var(--cinza-100);color:var(--cinza-600);}
+  .tag-area{background:var(--azul-100);color:var(--azul-700);}
+  .li-del{
+    border:none;background:none;color:var(--cinza-600);
+    font-size:18px;cursor:pointer;padding:2px 6px;line-height:1;
+  }
+
+  .empty-state{
+    text-align:center;
+    color:var(--cinza-600);
+    font-size:13.5px;
+    padding:30px 10px;
+  }
+
+  .grupo-data-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    background:var(--azul-900);
+    color:#fff;
+    padding:9px 14px;
+    border-radius:8px;
+    font-size:12.5px;
+    font-weight:700;
+    margin:18px 0 10px;
+  }
+  .grupo-data-head:first-child{margin-top:0;}
+  .grupo-data-count{
+    background:rgba(255,255,255,.16);
+    border-radius:20px;
+    padding:3px 10px;
+    font-size:11.5px;
+  }
+
+  .section-title{
+    font-size:13px;
+    font-weight:700;
+    color:var(--azul-900);
+    text-transform:uppercase;
+    letter-spacing:.4px;
+    margin:22px 0 10px;
+    padding-left:2px;
+  }
+
+  .toast{
+    position:fixed;
+    bottom:100px;
+    left:50%;
+    transform:translateX(-50%) translateY(20px);
+    background:var(--cinza-900);
+    color:#fff;
+    padding:11px 18px;
+    border-radius:8px;
+    font-size:13.5px;
+    font-weight:600;
+    opacity:0;
+    transition:all .25s ease;
+    z-index:100;
+    max-width:90%;
+    text-align:center;
+    pointer-events:none;
+  }
+  .toast.show{
+    opacity:1;
+    transform:translateX(-50%) translateY(0);
+  }
+
+  .tabs{
+    display:flex;
+    background:#fff;
+    border-bottom:1px solid var(--cinza-300);
+    position:sticky;
+    top:67px;
+    z-index:40;
+  }
+  .tab{
+    flex:1;
+    text-align:center;
+    padding:12px 6px;
+    font-size:13px;
+    font-weight:700;
+    color:var(--cinza-600);
+    cursor:pointer;
+    border-bottom:3px solid transparent;
+  }
+  .tab.active{
+    color:var(--azul-700);
+    border-bottom-color:var(--amarelo);
+  }
+
+  .panel{display:none;}
+  .panel.active{display:block;}
+
+  .helper-text{
+    font-size:12px;
+    color:var(--cinza-600);
+    margin-top:4px;
+  }
+
+  /* ---- botão de config no header ---- */
+  .config-btn{
+    background:rgba(255,255,255,.14);
+    border:1px solid rgba(255,255,255,.25);
+    border-radius:8px;
+    color:#fff;
+    font-size:12px;
+    font-weight:700;
+    padding:7px 10px;
+    cursor:pointer;
+    white-space:nowrap;
+    flex-shrink:0;
+  }
+
+  /* ---- modal de importação ---- */
+  .modal-overlay{
+    position:fixed;
+    top:0; right:0; bottom:0; left:0;
+    background:rgba(11,37,64,.55);
+    z-index:200;
+    display:none;
+    align-items:flex-end;
+    justify-content:center;
+  }
+  .modal-overlay.show{display:flex;}
+  .modal-sheet{
+    background:#fff;
+    width:100%;
+    max-width:560px;
+    border-radius:16px 16px 0 0;
+    padding:18px 18px 22px;
+    max-height:88vh;
+    overflow-y:auto;
+    animation:slideUp .2s ease;
+  }
+  @keyframes slideUp{
+    from{transform:translateY(24px);opacity:0;}
+    to{transform:translateY(0);opacity:1;}
+  }
+  .modal-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:4px;
+  }
+  .modal-head h2{
+    font-size:16px;
+    margin:0;
+    color:var(--azul-900);
+  }
+  .modal-close{
+    border:none;
+    background:none;
+    font-size:22px;
+    color:var(--cinza-600);
+    cursor:pointer;
+    line-height:1;
+    padding:4px;
+  }
+  .modal-sub{
+    font-size:12.5px;
+    color:var(--cinza-600);
+    margin-bottom:16px;
+  }
+  .upload-zone{
+    border:2px dashed var(--cinza-300);
+    border-radius:10px;
+    padding:22px 14px;
+    text-align:center;
+    color:var(--cinza-600);
+    font-size:13px;
+    margin-bottom:14px;
+    cursor:pointer;
+  }
+  .upload-zone:active{background:var(--azul-100);}
+  .upload-zone input{display:none;}
+  .upload-zone .icon{font-size:26px;margin-bottom:6px;}
+  .lista-status{
+    background:var(--azul-100);
+    border-radius:8px;
+    padding:10px 12px;
+    font-size:12.5px;
+    color:var(--azul-900);
+    margin-bottom:14px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:8px;
+  }
+  .lista-status b{font-size:13.5px;}
+  .preview-box{
+    border:1px solid var(--cinza-300);
+    border-radius:8px;
+    max-height:160px;
+    overflow-y:auto;
+    font-size:11.5px;
+    padding:8px 10px;
+    margin-bottom:14px;
+    background:var(--cinza-100);
+  }
+  .preview-row{
+    padding:4px 0;
+    border-bottom:1px solid var(--cinza-300);
+  }
+  .preview-row:last-child{border-bottom:none;}
+  .erro-import{
+    background:#f8e3e0;
+    color:var(--vermelho);
+    border-radius:8px;
+    padding:10px 12px;
+    font-size:12.5px;
+    margin-bottom:14px;
+  }
+
+  /* ---- banner de instalação PWA ---- */
+  .install-banner{
+    position:fixed;
+    left:12px;
+    right:12px;
+    bottom:80px;
+    background:var(--azul-900);
+    color:#fff;
+    border-radius:12px;
+    padding:14px 14px 14px 16px;
+    box-shadow:0 6px 20px rgba(0,0,0,.28);
+    display:flex;
+    align-items:center;
+    gap:12px;
+    z-index:90;
+    transform:translateY(120%);
+    opacity:0;
+    transition:all .3s ease;
+    pointer-events:none;
+  }
+  .install-banner.show{
+    transform:translateY(0);
+    opacity:1;
+    pointer-events:auto;
+  }
+  .install-banner .install-icon{
+    width:38px;height:38px;
+    border-radius:9px;
+    background:var(--amarelo);
+    flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    font-size:18px;
+  }
+  .install-banner .install-text{
+    flex:1;
+    font-size:12.5px;
+    line-height:1.35;
+  }
+  .install-banner .install-actions{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    flex-shrink:0;
+  }
+  .install-banner button{
+    border:none;
+    border-radius:7px;
+    font-size:12px;
+    font-weight:700;
+    padding:7px 10px;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .btn-instalar-sim{
+    background:var(--amarelo);
+    color:var(--azul-900);
+  }
+  .btn-instalar-nao{
+    background:rgba(255,255,255,.14);
+    color:#fff;
+  }
+
+  /* ---- modal de exportação ---- */
+  .export-option{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    padding:14px;
+    border:1.5px solid var(--cinza-300);
+    border-radius:10px;
+    margin-bottom:10px;
+    cursor:pointer;
+    transition:background .12s ease;
+  }
+  .export-option:active{background:var(--azul-100);}
+  .export-icon{
+    font-size:26px;
+    width:42px;
+    text-align:center;
+    flex-shrink:0;
+  }
+  .export-text{
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+  }
+  .export-text b{font-size:14px;color:var(--azul-900);}
+  .export-text span{font-size:12px;color:var(--cinza-600);}
+
+  .progresso-bar-wrap{
+    background:var(--cinza-100);
+    border-radius:8px;
+    padding:12px 14px;
+    margin-top:6px;
+    font-size:12.5px;
+    color:var(--azul-900);
+  }
+  .progresso-bar-track{
+    width:100%;
+    height:8px;
+    background:var(--cinza-300);
+    border-radius:4px;
+    margin-top:8px;
+    overflow:hidden;
+  }
+  .progresso-bar-fill{
+    height:100%;
+    background:var(--azul-700);
+    border-radius:4px;
+    transition:width .15s ease;
+    width:0%;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="top-row">
+    <div class="brand">
+      <div class="dot"></div>
+      <div>
+        <h1>Ronda de Mina</h1>
+        <div class="sub">Infraestrutura e Drenagem</div>
+      </div>
+    </div>
+    <button class="config-btn" onclick="abrirModalImport()">⚙ Atividades</button>
+  </div>
+  <div class="top-row" style="margin-top:8px;">
+    <div class="count-badge" id="countBadge">0 registros</div>
+  </div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" data-tab="novo">+ Novo registro</div>
+  <div class="tab" data-tab="lista">Registros da ronda</div>
+</div>
+
+<main>
+
+  <!-- ===================== PAINEL: NOVO REGISTRO ===================== -->
+  <div class="panel active" id="panel-novo">
+
+    <div class="card">
+      <div class="card-head">📋 Identificação da verificação</div>
+      <div class="card-body">
+        <div class="row2">
+          <div class="field">
+            <label>Data da análise</label>
+            <input type="date" id="campoData">
+          </div>
+          <div class="field">
+            <label>Hora</label>
+            <input type="time" id="campoHora">
+          </div>
+        </div>
+        <div class="field">
+          <label>Responsável pela análise</label>
+          <input type="text" id="campoResponsavel" placeholder="Nome do responsável">
+        </div>
+        <div class="field">
+          <label>Área / Frente</label>
+          <select id="campoArea">
+            <option value="">Selecione a área</option>
+            <option>Alegria Sul</option>
+            <option>Alegria Norte</option>
+            <option>PDER Sul</option>
+            <option>Conta História</option>
+            <option>Geral</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">🛠️ Atividade verificada</div>
+      <div class="card-body">
+
+        <div class="field" id="blocoSelectAtividade">
+          <label>Atividade do plano vigente</label>
+          <select id="campoAtividadePlano">
+            <option value="">Selecione uma atividade do plano...</option>
+          </select>
+        </div>
+
+        <div class="field hidden" id="blocoAtividadeLivre">
+          <label>Descreva a atividade verificada</label>
+          <input type="text" id="campoAtividadeLivre" placeholder="Ex: Conformação de acesso próximo à Frente 09">
+        </div>
+
+        <div class="new-act-toggle" id="toggleOutraAtividade">
+          <div class="chk" id="chkOutra"></div>
+          <span>Não está na lista / é uma atividade nova para o próximo plano</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">✅ Avaliação em campo</div>
+      <div class="card-body">
+
+        <div class="field">
+          <label>Situação encontrada na ronda</label>
+          <div class="pill-group" id="grupoStatus">
+            <label class="pill status-conforme" data-val="Conforme">
+              <input type="radio" name="status">Conforme
+            </label>
+            <label class="pill status-parcial" data-val="Parcial / Em execução">
+              <input type="radio" name="status">Parcial
+            </label>
+            <label class="pill status-nao-conforme" data-val="Não conforme">
+              <input type="radio" name="status">Não conforme
+            </label>
+            <label class="pill status-nao-verificado" data-val="Não verificado / Não acessado">
+              <input type="radio" name="status">Não verificado
+            </label>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Prioridade para o próximo plano</label>
+          <div class="pill-group">
+            <label class="pill-prior" data-val="Normal"><input type="radio" name="prior">Normal</label>
+            <label class="pill-prior" data-val="Alta"><input type="radio" name="prior">Alta</label>
+            <label class="pill-prior" data-val="Crítica"><input type="radio" name="prior">Crítica</label>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Incluir no próximo plano?</label>
+          <select id="campoProximoPlano">
+            <option value="Não">Não — só registro da ronda atual</option>
+            <option value="Sim - continuidade">Sim — dar continuidade à atividade atual</option>
+            <option value="Sim - nova">Sim — incluir como atividade nova</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Observações / detalhes da verificação</label>
+          <textarea id="campoObs" placeholder="Descreva o que foi encontrado: condição do talude, drenagem, equipamento no local, riscos observados, etc."></textarea>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">📷 Registro fotográfico</div>
+      <div class="card-body">
+        <label class="upload-zone" id="zonaCaptura" style="margin-bottom:12px;">
+          <div class="icon">📷</div>
+          <div>Toque para tirar uma foto</div>
+          <input type="file" id="inputCameraFoto" accept="image/*" capture="environment" multiple>
+        </label>
+        <div class="photo-hint" id="statusGpsHint">📍 Obtendo localização para carimbar nas fotos...</div>
+        <div class="photo-grid" id="gradeFotosAdicionadas"></div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" onclick="salvarRegistro()" style="margin-bottom:10px;">✓ Salvar registro da ronda</button>
+    <div class="helper-text" style="text-align:center;">O registro fica salvo neste dispositivo até você exportar a planilha.</div>
+
+  </div>
+
+  <!-- ===================== PAINEL: LISTA ===================== -->
+  <div class="panel" id="panel-lista">
+    <div class="section-title">Registros desta ronda</div>
+    <div id="listaRegistros"></div>
+    <div class="empty-state" id="estadoVazio">Nenhum registro ainda. Vá em "+ Novo registro" para começar a ronda.</div>
+  </div>
+
+</main>
+
+<div class="footer-bar">
+  <button class="btn btn-ghost" onclick="limparTudo()">Limpar tudo</button>
+  <button class="btn btn-primary" onclick="abrirModalExportar()">⬇ Exportar ronda</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ===================== MODAL: EXPORTAR RONDA ===================== -->
+<div class="modal-overlay" id="modalExportar">
+  <div class="modal-sheet">
+    <div class="modal-head">
+      <h2>⬇ Exportar ronda</h2>
+      <button class="modal-close" onclick="fecharModalExportar()">✕</button>
+    </div>
+    <div class="modal-sub">Escolha o formato de acordo com o uso que você vai fazer dos dados.</div>
+
+    <div class="export-option" onclick="exportarCSV()">
+      <div class="export-icon">📊</div>
+      <div class="export-text">
+        <b>Planilha CSV</b>
+        <span>Dados estruturados para análise no Power BI</span>
+      </div>
+    </div>
+
+    <div class="export-option" onclick="exportarFotosZip()">
+      <div class="export-icon">🗂️</div>
+      <div class="export-text">
+        <b>Fotos (.zip)</b>
+        <span>Todas as fotos com carimbo, nomeadas por registro</span>
+      </div>
+    </div>
+
+    <div class="export-option" onclick="exportarRelatorioPdf()">
+      <div class="export-icon">📄</div>
+      <div class="export-text">
+        <b>Relatório PDF</b>
+        <span>Documento único com texto e fotos — ideal para enviar por e-mail</span>
+      </div>
+    </div>
+
+    <div id="progressoExportacao"></div>
+  </div>
+</div>
+
+<!-- ===================== BANNER: INSTALAR APP (PWA) ===================== -->
+<div class="install-banner" id="bannerInstalacao">
+  <div class="install-icon">📲</div>
+  <div class="install-text" id="bannerInstalacaoTexto">Instale o app na tela inicial para acesso rápido.</div>
+  <div class="install-actions">
+    <button class="btn-instalar-sim" id="btnInstalarAgora" onclick="instalarAgora()">Instalar</button>
+    <button class="btn-instalar-nao" onclick="dispensarBannerInstalacao()">Agora não</button>
+  </div>
+</div>
+
+<!-- ===================== MODAL: IMPORTAR ATIVIDADES ===================== -->
+<div class="modal-overlay" id="modalImport">
+  <div class="modal-sheet">
+    <div class="modal-head">
+      <h2>⚙ Atualizar lista de atividades</h2>
+      <button class="modal-close" onclick="fecharModalImport()">✕</button>
+    </div>
+    <div class="modal-sub">
+      Importe o CSV do próximo plano (colunas: area;codigo;atividade;frota;status_plano;prioridade).
+      A lista substitui a atual neste dispositivo e fica salva até a próxima importação.
+    </div>
+
+    <div class="lista-status" id="listaStatusAtual">
+      <div><b id="qtdAtividadesAtual">0</b> atividades carregadas <span id="origemListaAtual"></span></div>
+    </div>
+
+    <label class="upload-zone" id="uploadZone">
+      <div class="icon">📂</div>
+      <div>Toque para escolher o arquivo CSV do plano</div>
+      <input type="file" id="inputCsvAtividades" accept=".csv,text/csv">
+    </label>
+
+    <div id="areaErroImport"></div>
+    <div id="areaPreviewImport"></div>
+
+    <div class="btn-row" id="botoesConfirmaImport" style="display:none;">
+      <button class="btn btn-ghost" onclick="cancelarPreviewImport()">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarImport()">Confirmar importação</button>
+    </div>
+
+    <div class="btn-row" style="margin-top:18px;">
+      <button class="btn btn-secondary" onclick="exportarCsvAtividadesAtuais()">⬇ Exportar lista atual (.csv)</button>
+      <button class="btn btn-ghost" onclick="restaurarListaPadrao()">↺ Restaurar padrão</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const ATIVIDADES_PLANO = [{"area": "Geral", "codigo": "SUP-001", "atividade": "Demobilização de materiais no pátio de materiais (Concentrador 3)", "frota": "950", "status_plano": "Programada 22/06 a 26/06", "prioridade": "Normal"}, {"area": "Geral", "codigo": "SUP-002", "atividade": "Montagem de correias - Frente 30", "frota": "950", "status_plano": "Programada", "prioridade": "Normal"}, {"area": "PDER Sul", "codigo": "PDER-001", "atividade": "Disposição estéril Planta DE-71A-1082 (priorizar)", "frota": "-", "status_plano": "Sequenciamento", "prioridade": "Alta"}, {"area": "PDER Sul", "codigo": "PDER-002", "atividade": "Disposição Planta DE-70A-1135 e DE-70D-1110 (apenas dia, c/ topógrafo e greidista)", "frota": "-", "status_plano": "Sequenciamento", "prioridade": "Alta"}, {"area": "PDER Sul", "codigo": "PDER-003", "atividade": "Disposição estéril frotas pequeno porte - DE-70H-1120 / DE-70F-1120; rejeito RJ-70G-1120", "frota": "-", "status_plano": "Sequenciamento", "prioridade": "Alta"}, {"area": "PDER Sul", "codigo": "PDER-004", "atividade": "Disposição estéril metabásica (núcleo PDER indisponível) - DE-70A-1136", "frota": "-", "status_plano": "Sequenciamento", "prioridade": "Alta"}, {"area": "Alegria Sul", "codigo": "D10T-1-A", "atividade": "[D10T-1] Conformação de acesso PDER", "frota": "D10T", "status_plano": "Programada", "prioridade": "Alta"}, {"area": "Alegria Sul", "codigo": "D10T-1-992", "atividade": "[D10T-1|992] Conformação Sumidouro", "frota": "D10T", "status_plano": "Programada", "prioridade": "Alta"}, {"area": "Alegria Sul", "codigo": "D10T-1-F24", "atividade": "[D10T-1] Retaludamento Frente 24 (priorizar FL-24BJ-1076/MI, FL-24AA-1092/MI, FL-24AG-1092/MI)", "frota": "D10T", "status_plano": "Em andamento", "prioridade": "Normal"}, {"area": "Alegria Sul", "codigo": "D10T-2-CV68", "atividade": "[D10T-2] Confecção leito CV68 - estabilização (finalizar até 24/06)", "frota": "D10T", "status_plano": "Em andamento", "prioridade": "Alta"}, {"area": "Alegria Sul", "codigo": "950H-D10T-2", "atividade": "[950H|D10T-2] Mover módulos de correia da Frente 30 para o Apêndice", "frota": "950H", "status_plano": "Em andamento", "prioridade": "Alta"}, {"area": "Alegria Sul", "codigo": "F30-5S", "atividade": "Frente 30 - 5S no pátio da 30 (solicitação geologia) e afastar componentes p/ pesquisa RC", "frota": "-", "status_plano": "Programada", "prioridade": "Normal"}, {"area": "Alegria Sul", "codigo": "D10T-2-C3", "atividade": "[D10T-2] Conformação do banco próximo à Portaria C3 (c/ topógrafo e greidista)", "frota": "D10T", "status_plano": "Em andamento", "prioridade": "Alta"}, {"area": "Alegria Sul", "codigo": "CR-992-C3", "atividade": "[CR-992] Delimitação acesso próximo à Portaria C3", "frota": "CR-992", "status_plano": "Programada", "prioridade": "Alta"}, {"area": "Alegria Sul", "codigo": "CR-992-BOX", "atividade": "[CR-992] Confecção box (veículo pequeno porte)", "frota": "CR-992", "status_plano": "ATRASADA - 21 dias", "prioridade": "Crítica"}, {"area": "Alegria Sul", "codigo": "CR-992-PRACA", "atividade": "[CR-992] Remoção blocos e segregação praça", "frota": "CR-992", "status_plano": "Programada", "prioridade": "Normal"}, {"area": "Alegria Sul", "codigo": "ESC-1-BS04", "atividade": "[ESC-1] Confecção bacia BS04", "frota": "ESC-1", "status_plano": "Em andamento", "prioridade": "Normal"}, {"area": "Alegria Sul", "codigo": "ESC-1-CB-TOPSOIL", "atividade": "[ESC-1|CB] Remoção top soil sumidouro (camada 4m)", "frota": "ESC-1", "status_plano": "Programada", "prioridade": "Normal"}, {"area": "Alegria Sul", "codigo": "ESC-1-CB-MANTA", "atividade": "[ESC-1|CB] Remoção manta (revegetação) banco 1118", "frota": "ESC-1", "status_plano": "Programada", "prioridade": "Normal"}, {"area": "Alegria Sul", "codigo": "ESC-1-CB-PE", "atividade": "[ESC-1|CB] Reconstituir pé da bacia com blocos (pilha cônica)", "frota": "ESC-1", "status_plano": "Programada", "prioridade": "Normal"}, {"area": "Alegria Sul", "codigo": "ESC-2-F30", "atividade": "[ESC-2] Retaludamento Frente 30 (AM-30A-1118 / AM-30A-1113)", "frota": "ESC-2", "status_plano": "Em andamento", "prioridade": "Normal"}, {"area": "Alegria Sul", "codigo": "CB-F30", "atividade": "[CB] Disposição lavra - Frente 30 (DM-30D-1086)", "frota": "-", "status_plano": "Em andamento", "prioridade": "Normal"}, {"area": "Alegria Sul", "codigo": "ESC-3-BS16", "atividade": "[ESC-3] Reconstituir canal da BS16", "frota": "ESC-3", "status_plano": "Em andamento", "prioridade": "Normal"}, {"area": "Alegria Sul", "codigo": "ESC-3-PDER", "atividade": "[ESC-3] Confecção canal plano enroncado PDER", "frota": "ESC-3", "status_plano": "Programada", "prioridade": "Normal"}, {"area": "Alegria Sul", "codigo": "ESC-4-BS07", "atividade": "[ESC-4] Limpeza total BS07 (lastro p/ limpeza total em BS05 e BS07)", "frota": "ESC-4", "status_plano": "Em andamento", "prioridade": "Normal"}, {"area": "Alegria Sul", "codigo": "ESC-4-BS17", "atividade": "[ESC-4] Limpeza total BS17, corrigir canal enroncado e vertedouro", "frota": "ESC-4", "status_plano": "Programada", "prioridade": "Normal"}, {"area": "Alegria Sul", "codigo": "ESC-4-CB-BS11", "atividade": "[ESC-4|CB] Remoção material remanescente em frente à BS11 e refazer box (levar p/ Frente 30)", "frota": "ESC-4", "status_plano": "Em andamento", "prioridade": "Normal"}, {"area": "Alegria Sul", "codigo": "ESC-4-CB-MACACOS", "atividade": "[ESC-4|CB] Limpeza parcial Dique de Macacos", "frota": "ESC-4", "status_plano": "Programada", "prioridade": "Normal"}, {"area": "Alegria Sul", "codigo": "ESC-4-D6-CV72", "atividade": "[ESC-4|D6] Conformação acesso próximo à CV72 (ajustar drenagem p/ canaleta)", "frota": "ESC-4/D6", "status_plano": "Programada", "prioridade": "Normal"}, {"area": "Alegria Sul", "codigo": "D6-C3", "atividade": "[D6] Conformar face do talude próximo à Portaria C3 (DE-70D-1110)", "frota": "D6", "status_plano": "Em andamento", "prioridade": "Normal"}, {"area": "Alegria Sul", "codigo": "MN-VIX-SUMPA", "atividade": "[MN-VIX] Patrolar acesso Sump A", "frota": "VIX", "status_plano": "Rotina", "prioridade": "Normal"}, {"area": "Alegria Sul", "codigo": "MN-VIX-SOTREQ", "atividade": "[MN-VIX] Manutenção de acesso - Sotreq|Piracicaba", "frota": "VIX", "status_plano": "Rotina", "prioridade": "Normal"}, {"area": "Alegria Norte", "codigo": "D10T-3-ACESSO", "atividade": "[D10T-3] Conformar acesso e melhorar raio de curvatura", "frota": "D10T", "status_plano": "Programada", "prioridade": "Normal"}, {"area": "Alegria Norte", "codigo": "D10T-4-F08", "atividade": "[D10T-4] Retaludamento Frente 08", "frota": "D10T", "status_plano": "Em andamento", "prioridade": "Alta"}, {"area": "Alegria Norte", "codigo": "D10T-4-F11", "atividade": "[D10T-4] Retaludamento Frente 11", "frota": "D10T", "status_plano": "Em andamento", "prioridade": "Normal"}, {"area": "Alegria Norte", "codigo": "CR-992-SANY-F11", "atividade": "[CR-992|SANY] Limpeza total das bacias Frente 11 (BN00, BN03)", "frota": "CR-992/SANY", "status_plano": "ATRASADA - 28 dias", "prioridade": "Crítica"}, {"area": "Alegria Norte", "codigo": "ESC-5-CB-F11", "atividade": "[ESC-5|CB] Limpeza total das bacias Frente 11 (BN01, BN02, BN04)", "frota": "ESC-5", "status_plano": "Em andamento", "prioridade": "Normal"}, {"area": "Alegria Norte", "codigo": "CB-F11-MAT", "atividade": "[CB] Disposição dos materiais de limpeza de bacia - Frente 11 (amostragem)", "frota": "-", "status_plano": "Programada", "prioridade": "Normal"}, {"area": "Alegria Norte", "codigo": "ESC-6-BN00", "atividade": "[ESC-6] Reconstituir canal enroncado da praça de descarga até BN00", "frota": "ESC-6", "status_plano": "Programada", "prioridade": "Normal"}, {"area": "Alegria Norte", "codigo": "ESC-7-BN01-02", "atividade": "[ESC-7] Reconstituir canal enroncado entre BN01 e BN02", "frota": "ESC-7", "status_plano": "Programada", "prioridade": "Normal"}, {"area": "Alegria Norte", "codigo": "ESC-7-BN02-PE", "atividade": "[ESC-7] Limpeza pé do banco após limpeza total da BN02", "frota": "ESC-7", "status_plano": "Programada", "prioridade": "Normal"}, {"area": "Alegria Norte", "codigo": "ESC-8-F08", "atividade": "[ESC-8] Lavra anomalia da Frente 08", "frota": "ESC-8", "status_plano": "Em andamento", "prioridade": "Normal"}, {"area": "Alegria Norte", "codigo": "ESC-9-F11", "atividade": "[ESC-9] Retaludamento Frente 11", "frota": "ESC-9", "status_plano": "Em andamento", "prioridade": "Normal"}, {"area": "Alegria Norte", "codigo": "ESC-10-11-QUAD", "atividade": "[ESC-10|ESC-11] Lavra do acesso ao Quadrado", "frota": "ESC-10/11", "status_plano": "Em andamento", "prioridade": "Normal"}, {"area": "Alegria Norte", "codigo": "ESC-12-F14", "atividade": "[ESC-12] Limpeza e adequação canal do Sump da Frente 14", "frota": "ESC-12", "status_plano": "Programada", "prioridade": "Normal"}, {"area": "Alegria Norte", "codigo": "ESC-13-14-15-F14", "atividade": "[ESC-13|ESC-14|ESC-15] Lavra projeto retaludamento Frente 14", "frota": "ESC-13/14/15", "status_plano": "Em andamento", "prioridade": "Normal"}, {"area": "Alegria Norte", "codigo": "CB-F03", "atividade": "[CB] Disposição dos materiais de limpeza de bacia - Frente 03 (amostragem)", "frota": "-", "status_plano": "Em andamento", "prioridade": "Normal"}, {"area": "Alegria Norte", "codigo": "ESC-15-CB-FAZ", "atividade": "[ESC-15|CB] Limpeza da grelha e conformar acesso pilha Fazendão", "frota": "ESC-15", "status_plano": "Programada", "prioridade": "Normal"}, {"area": "Alegria Norte", "codigo": "ESC-15-CB-BN27", "atividade": "[ESC-15|CB] Limpeza total da BN27", "frota": "ESC-15", "status_plano": "Programada", "prioridade": "Normal"}, {"area": "Alegria Norte", "codigo": "ESC-15-CB-BN12-13-16", "atividade": "[ESC-15|CB] Limpeza total das bacias BN12, 13 e 16", "frota": "ESC-15", "status_plano": "Programada", "prioridade": "Normal"}, {"area": "Alegria Norte", "codigo": "ESC-15-CB-BN12-13", "atividade": "[ESC-15|CB] Reconstituir canal entre as bacias BN12 e 13", "frota": "ESC-15", "status_plano": "Programada", "prioridade": "Normal"}, {"area": "Alegria Norte", "codigo": "MN-VIX-PDEJM", "atividade": "[MN-VIX] Conformar acesso total PDE-JM", "frota": "VIX", "status_plano": "Programada", "prioridade": "Normal"}, {"area": "Alegria Norte", "codigo": "D6-BN19-CV39-40", "atividade": "[D6] Manutenção de acesso e leito - BN19, CV39 e CV40", "frota": "D6", "status_plano": "Rotina", "prioridade": "Normal"}, {"area": "Conta História", "codigo": "D10T-2-F23", "atividade": "[D10T-2] Retaludamento Frente 23 - Conta História (corte e aterro)", "frota": "D10T", "status_plano": "Programada", "prioridade": "Normal"}, {"area": "Conta História", "codigo": "ESC-172-VEG", "atividade": "[ESC-172] Supressão vegetal - Conta História (pátio top soil)", "frota": "ESC-172", "status_plano": "Em andamento", "prioridade": "Normal"}, {"area": "Conta História", "codigo": "ESC-172-CB-PATIO", "atividade": "[ESC-172|CB] Construção pátio top soil - Conta História", "frota": "ESC-172", "status_plano": "Em andamento", "prioridade": "Normal"}, {"area": "Conta História", "codigo": "950H-COBRAS", "atividade": "[950H] Mover módulos de correia do Pátio das Cobras para o Apêndice", "frota": "950H", "status_plano": "Em andamento", "prioridade": "Alta"}];
+
+// ============================================================
+// INDEXEDDB: armazenamento das fotos (binário) — localStorage não suporta
+// o volume de dados de fotos com carimbo (30+ por ronda).
+// ============================================================
+const IDB_NOME = 'ronda_mina_db';
+const IDB_VERSAO = 1;
+const IDB_STORE = 'fotos';
+let idbConexao = null;
+
+function idbAbrir(){
+  if (idbConexao) return Promise.resolve(idbConexao);
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(IDB_NOME, IDB_VERSAO);
+    req.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(IDB_STORE)) {
+        db.createObjectStore(IDB_STORE, { keyPath: 'id' });
+      }
+    };
+    req.onsuccess = (e) => { idbConexao = e.target.result; resolve(idbConexao); };
+    req.onerror = (e) => reject(e.target.error);
+  });
+}
+
+async function idbSalvarFoto(id, blob){
+  const db = await idbAbrir();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).put({ id, blob, criadoEm: Date.now() });
+    tx.oncomplete = () => resolve();
+    tx.onerror = (e) => reject(e.target.error);
+  });
+}
+
+async function idbObterFoto(id){
+  const db = await idbAbrir();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readonly');
+    const req = tx.objectStore(IDB_STORE).get(id);
+    req.onsuccess = () => resolve(req.result ? req.result.blob : null);
+    req.onerror = (e) => reject(e.target.error);
+  });
+}
+
+async function idbExcluirFoto(id){
+  const db = await idbAbrir();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).delete(id);
+    tx.oncomplete = () => resolve();
+    tx.onerror = (e) => reject(e.target.error);
+  });
+}
+
+async function idbExcluirFotos(ids){
+  const db = await idbAbrir();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    const store = tx.objectStore(IDB_STORE);
+    ids.forEach(id => store.delete(id));
+    tx.oncomplete = () => resolve();
+    tx.onerror = (e) => reject(e.target.error);
+  });
+}
+
+let registros = JSON.parse(localStorage.getItem('ronda_registros') || '[]');
+let fotosTemp = [];
+let outraAtividadeAtiva = false;
+
+// --- lista de atividades: usa a importada (localStorage) se existir, senão a padrão do plano atual ---
+const ATIVIDADES_PLANO_PADRAO = ATIVIDADES_PLANO;
+let atividadesAtuais = [];
+let origemListaAtividades = 'padrao'; // 'padrao' ou 'importada'
+
+function carregarListaAtividades(){
+  const salva = localStorage.getItem('ronda_atividades_importadas');
+  if (salva) {
+    try {
+      const parsed = JSON.parse(salva);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        atividadesAtuais = parsed;
+        origemListaAtividades = 'importada';
+        return;
+      }
+    } catch(e) { /* ignora e cai no padrão */ }
+  }
+  atividadesAtuais = ATIVIDADES_PLANO_PADRAO;
+  origemListaAtividades = 'padrao';
+}
+
+const selAtiv = document.getElementById('campoAtividadePlano');
+
+function popularSelectAtividades(){
+  selAtiv.innerHTML = '<option value="">Selecione uma atividade do plano...</option>';
+  const areasOrdenadas = [...new Set(atividadesAtuais.map(a => a.area))];
+  areasOrdenadas.forEach(area => {
+    const grp = document.createElement('optgroup');
+    grp.label = area;
+    atividadesAtuais.filter(a => a.area === area).forEach(a => {
+      const opt = document.createElement('option');
+      opt.value = a.codigo;
+      opt.textContent = a.atividade;
+      opt.dataset.prioridade = a.prioridade;
+      opt.dataset.status = a.status_plano;
+      opt.dataset.frota = a.frota;
+      opt.dataset.area = a.area;
+      grp.appendChild(opt);
+    });
+    selAtiv.appendChild(grp);
+  });
+}
+
+carregarListaAtividades();
+popularSelectAtividades();
+
+// ao escolher atividade do plano, sugerir área e prioridade automaticamente
+selAtiv.addEventListener('change', () => {
+  const opt = selAtiv.selectedOptions[0];
+  if (opt && opt.value) {
+    document.getElementById('campoArea').value = opt.dataset.area || '';
+    const prior = opt.dataset.prioridade;
+    document.querySelectorAll('.pill-prior').forEach(p => p.classList.remove('selected'));
+    const matchPrior = document.querySelector(`.pill-prior[data-val="${prior}"]`);
+    if (matchPrior) { matchPrior.classList.add('selected'); matchPrior.querySelector('input').checked = true; }
+  }
+});
+
+// --- tabs ---
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
+    if (tab.dataset.tab === 'lista') renderLista();
+  });
+});
+
+// --- pills (status / prioridade) ---
+document.querySelectorAll('.pill, .pill-prior').forEach(p => {
+  p.addEventListener('click', () => {
+    const group = p.parentElement;
+    group.querySelectorAll('.pill, .pill-prior').forEach(x => x.classList.remove('selected'));
+    p.classList.add('selected');
+    p.querySelector('input').checked = true;
+  });
+});
+
+// --- toggle "outra atividade" ---
+document.getElementById('toggleOutraAtividade').addEventListener('click', () => {
+  outraAtividadeAtiva = !outraAtividadeAtiva;
+  document.getElementById('chkOutra').classList.toggle('on', outraAtividadeAtiva);
+  document.getElementById('blocoSelectAtividade').classList.toggle('hidden', outraAtividadeAtiva);
+  document.getElementById('blocoAtividadeLivre').classList.toggle('hidden', !outraAtividadeAtiva);
+  if (outraAtividadeAtiva) {
+    document.getElementById('campoProximoPlano').value = 'Sim - nova';
+  }
+});
+
+// ============================================================
+// FOTOS: CAPTURA VIA CÂMERA + CARIMBO DE DATA/HORA/LOCALIZAÇÃO
+// ============================================================
+
+// fotosTemp guarda, para o registro em edição: {id, blob, thumbUrl}
+// (o blob já sai da captura com o carimbo desenhado e a imagem comprimida)
+
+let gpsAtual = null; // {lat, lon, precisao} ou null se indisponível/negado
+
+function iniciarCapturaGps(){
+  const hint = document.getElementById('statusGpsHint');
+  if (!('geolocation' in navigator)) {
+    hint.textContent = '📍 Localização não suportada neste navegador — fotos sem GPS no carimbo.';
+    hint.className = 'photo-hint gps-erro';
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      gpsAtual = {
+        lat: pos.coords.latitude,
+        lon: pos.coords.longitude,
+        precisao: pos.coords.accuracy
+      };
+      hint.textContent = `📍 Localização obtida (precisão ~${Math.round(pos.coords.accuracy)}m) — será carimbada nas fotos.`;
+      hint.className = 'photo-hint gps-ok';
+    },
+    (err) => {
+      gpsAtual = null;
+      hint.textContent = '📍 Não foi possível obter localização (permissão negada ou sem sinal de GPS). Fotos serão carimbadas sem coordenadas.';
+      hint.className = 'photo-hint gps-erro';
+    },
+    { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
+  );
+}
+
+function formatarCoordenada(valor, tipoLat){
+  const abs = Math.abs(valor);
+  const grau = Math.floor(abs);
+  const min = (abs - grau) * 60;
+  const letra = tipoLat ? (valor >= 0 ? 'N' : 'S') : (valor >= 0 ? 'E' : 'O');
+  return `${grau}°${min.toFixed(3)}'${letra}`;
+}
+
+// redimensiona, comprime e desenha o carimbo de data/hora/local sobre a foto.
+// devolve uma Promise<Blob> (JPEG) pronta para guardar.
+function processarFotoComCarimbo(arquivo){
+  return new Promise((resolve, reject) => {
+    const imgTemp = new Image();
+    const leitor = new FileReader();
+    leitor.onload = (e) => { imgTemp.src = e.target.result; };
+    leitor.onerror = reject;
+    imgTemp.onload = () => {
+      const LARGURA_MAX = 1280;
+      let { width, height } = imgTemp;
+      if (width > LARGURA_MAX) {
+        height = Math.round(height * (LARGURA_MAX / width));
+        width = LARGURA_MAX;
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(imgTemp, 0, 0, width, height);
+
+      // --- carimbo (faixa semitransparente no rodapé com data/hora/local) ---
+      const agora = new Date();
+      const dataStr = agora.toLocaleDateString('pt-BR');
+      const horaStr = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      let linhaLocal = 'Localização não disponível';
+      if (gpsAtual) {
+        linhaLocal = `${formatarCoordenada(gpsAtual.lat, true)}  ${formatarCoordenada(gpsAtual.lon, false)}`;
+      }
+      const linha1 = `${dataStr}  ${horaStr}`;
+      const linha2 = linhaLocal;
+
+      const alturaFaixa = Math.round(height * 0.11);
+      ctx.fillStyle = 'rgba(11,37,64,0.72)';
+      ctx.fillRect(0, height - alturaFaixa, width, alturaFaixa);
+
+      const tamanhoFonte = Math.max(13, Math.round(width * 0.032));
+      ctx.fillStyle = '#ffffff';
+      ctx.font = `bold ${tamanhoFonte}px Arial, sans-serif`;
+      ctx.textBaseline = 'middle';
+      ctx.fillText(linha1, 10, height - alturaFaixa + alturaFaixa * 0.32);
+      ctx.font = `${Math.round(tamanhoFonte * 0.82)}px Arial, sans-serif`;
+      ctx.fillText(linha2, 10, height - alturaFaixa + alturaFaixa * 0.72);
+
+      canvas.toBlob((blob) => {
+        if (blob) resolve(blob); else reject(new Error('Falha ao gerar imagem'));
+      }, 'image/jpeg', 0.78);
+    };
+    imgTemp.onerror = reject;
+    leitor.readAsDataURL(arquivo);
+  });
+}
+
+document.getElementById('inputCameraFoto').addEventListener('change', async (ev) => {
+  const arquivos = Array.from(ev.target.files || []);
+  ev.target.value = ''; // permite tirar a mesma foto de novo depois
+  if (arquivos.length === 0) return;
+
+  for (const arquivo of arquivos) {
+    try {
+      const blobCarimbado = await processarFotoComCarimbo(arquivo);
+      const fotoId = 'foto_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+      await idbSalvarFoto(fotoId, blobCarimbado);
+      const thumbUrl = URL.createObjectURL(blobCarimbado);
+      fotosTemp.push({ id: fotoId, thumbUrl });
+      renderFotosTemp();
+    } catch (e) {
+      mostrarToast('Não foi possível processar uma das fotos.');
+    }
+  }
+});
+
+function renderFotosTemp(){
+  const cont = document.getElementById('gradeFotosAdicionadas');
+  cont.innerHTML = '';
+  fotosTemp.forEach((f) => {
+    const div = document.createElement('div');
+    div.className = 'photo-thumb';
+    div.innerHTML = `
+      <img src="${f.thumbUrl}" alt="Foto da ronda">
+      <span class="photo-badge">📍🕐</span>
+      <button class="photo-del" onclick="removerFotoTemp('${f.id}')">✕</button>
+    `;
+    cont.appendChild(div);
+  });
+}
+
+async function removerFotoTemp(fotoId){
+  fotosTemp = fotosTemp.filter(f => f.id !== fotoId);
+  await idbExcluirFoto(fotoId);
+  renderFotosTemp();
+}
+
+function getStatusSelecionado(){
+  const el = document.querySelector('#grupoStatus .pill.selected');
+  return el ? el.dataset.val : '';
+}
+function getPriorSelecionado(){
+  const el = document.querySelector('.pill-prior.selected');
+  return el ? el.dataset.val : '';
+}
+
+function salvarRegistro(){
+  const data = document.getElementById('campoData').value;
+  const hora = document.getElementById('campoHora').value;
+  const responsavel = document.getElementById('campoResponsavel').value.trim();
+  const area = document.getElementById('campoArea').value;
+  const status = getStatusSelecionado();
+  const prioridade = getPriorSelecionado();
+
+  let codigoAtividade, descAtividade, origem;
+  if (outraAtividadeAtiva) {
+    descAtividade = document.getElementById('campoAtividadeLivre').value.trim();
+    codigoAtividade = 'NOVA';
+    origem = 'Nova (não estava no plano)';
+  } else {
+    const opt = selAtiv.selectedOptions[0];
+    codigoAtividade = opt ? opt.value : '';
+    descAtividade = opt ? opt.textContent : '';
+    origem = 'Plano vigente';
+  }
+
+  if (!data || !responsavel || !descAtividade || !status) {
+    mostrarToast('Preencha data, responsável, atividade e situação.');
+    return;
+  }
+
+  const registro = {
+    id: Date.now(),
+    data_analise: data,
+    hora_analise: hora,
+    responsavel: responsavel,
+    area: area,
+    codigo_atividade: codigoAtividade,
+    atividade: descAtividade,
+    origem_atividade: origem,
+    status_campo: status,
+    prioridade: prioridade,
+    incluir_proximo_plano: document.getElementById('campoProximoPlano').value,
+    observacoes: document.getElementById('campoObs').value.trim(),
+    foto_ids: fotosTemp.map(f => f.id),
+    qtd_fotos: fotosTemp.length
+  };
+
+  registros.push(registro);
+  localStorage.setItem('ronda_registros', JSON.stringify(registros));
+  mostrarToast('Registro salvo ✓' + (registro.qtd_fotos > 0 ? ` (${registro.qtd_fotos} foto(s))` : ''));
+  fotosTemp = []; // as fotos já foram persistidas no IndexedDB; o registro guarda os IDs
+  limparFormulario();
+  atualizarContador();
+}
+
+function limparFormulario(){
+  document.getElementById('campoResponsavel').value = document.getElementById('campoResponsavel').value; // mantém responsável p/ agilizar ronda
+  document.getElementById('campoAtividadeLivre').value = '';
+  document.getElementById('campoObs').value = '';
+  selAtiv.value = '';
+  fotosTemp = [];
+  renderFotosTemp();
+  document.querySelectorAll('.pill, .pill-prior').forEach(p => p.classList.remove('selected'));
+  document.getElementById('campoProximoPlano').value = 'Não';
+  if (outraAtividadeAtiva) document.getElementById('toggleOutraAtividade').click();
+}
+
+function atualizarContador(){
+  const dataAtual = document.getElementById('campoData').value;
+  const doDia = registros.filter(r => r.data_analise === dataAtual).length;
+  document.getElementById('countBadge').textContent =
+    `${doDia} nesta ronda (${dataAtual ? formatarDataBR(dataAtual) : '—'}) · ${registros.length} no total`;
+}
+
+function formatarDataBR(iso){
+  const [a,m,d] = iso.split('-');
+  return `${d}/${m}`;
+}
+
+function renderLista(){
+  const cont = document.getElementById('listaRegistros');
+  const vazio = document.getElementById('estadoVazio');
+  cont.innerHTML = '';
+  if (registros.length === 0) { vazio.style.display='block'; return; }
+  vazio.style.display='none';
+
+  const tagClass = {
+    'Conforme':'tag-conforme',
+    'Parcial / Em execução':'tag-parcial',
+    'Não conforme':'tag-nao-conforme',
+    'Não verificado / Não acessado':'tag-nao-verificado'
+  };
+
+  // agrupa por data_analise (chave da ronda) e ordena datas da mais recente para a mais antiga
+  const grupos = {};
+  registros.forEach(r => {
+    const k = r.data_analise || 'Sem data';
+    if (!grupos[k]) grupos[k] = [];
+    grupos[k].push(r);
+  });
+  const datasOrdenadas = Object.keys(grupos).sort((a,b) => b.localeCompare(a));
+
+  datasOrdenadas.forEach(dataKey => {
+    const itens = grupos[dataKey];
+    const head = document.createElement('div');
+    head.className = 'grupo-data-head';
+    head.innerHTML = `<span>📅 Ronda de ${formatarDataBR(dataKey) !== '—' ? dataKey.split('-').reverse().join('/') : dataKey}</span><span class="grupo-data-count">${itens.length} registro${itens.length===1?'':'s'}</span>`;
+    cont.appendChild(head);
+
+    [...itens].reverse().forEach(r => {
+      const div = document.createElement('div');
+      div.className = 'list-card';
+      div.innerHTML = `
+        <div class="info">
+          <div class="li-title">${r.atividade}</div>
+          <div class="li-meta">
+            <span class="tag tag-area">${r.area || '—'}</span>
+            <span class="tag ${tagClass[r.status_campo] || 'tag-nao-verificado'}">${r.status_campo}</span>
+          </div>
+          <div class="li-meta">${r.hora_analise||''} · ${r.responsavel}</div>
+        </div>
+        <button class="li-del" onclick="excluirRegistro(${r.id})">✕</button>
+      `;
+      cont.appendChild(div);
+    });
+  });
+}
+
+async function excluirRegistro(id){
+  const registro = registros.find(r => r.id === id);
+  if (registro && registro.foto_ids && registro.foto_ids.length > 0) {
+    await idbExcluirFotos(registro.foto_ids);
+  }
+  registros = registros.filter(r => r.id !== id);
+  localStorage.setItem('ronda_registros', JSON.stringify(registros));
+  renderLista();
+  atualizarContador();
+}
+
+async function limparTudo(){
+  if (registros.length === 0) return;
+  if (confirm('Tem certeza que deseja apagar todos os registros desta ronda? As fotos também serão excluídas.')) {
+    const todosFotoIds = registros.flatMap(r => r.foto_ids || []);
+    if (todosFotoIds.length > 0) await idbExcluirFotos(todosFotoIds);
+    registros = [];
+    localStorage.setItem('ronda_registros', JSON.stringify(registros));
+    renderLista();
+    atualizarContador();
+    mostrarToast('Registros e fotos apagados.');
+  }
+}
+
+function exportarCSV(){
+  if (registros.length === 0) { mostrarToast('Nenhum registro para exportar.'); return; }
+  const headers = ['id','data_analise','hora_analise','responsavel','area','codigo_atividade','atividade','origem_atividade','status_campo','prioridade','incluir_proximo_plano','observacoes','qtd_fotos','nomes_arquivos_fotos'];
+  const linhas = [headers.join(';')];
+  registros.forEach(r => {
+    const idsFotos = r.foto_ids || [];
+    const nomesArquivos = idsFotos.map(id => `registro_${r.id}_${id}.jpg`).join(' | ');
+    const linha = [
+      r.id, r.data_analise, r.hora_analise, r.responsavel, r.area, r.codigo_atividade,
+      r.atividade, r.origem_atividade, r.status_campo, r.prioridade,
+      r.incluir_proximo_plano, r.observacoes, idsFotos.length, nomesArquivos
+    ].map(v => (v ?? '').toString().replace(/;/g,',').replace(/\n/g,' '));
+    linhas.push(linha.join(';'));
+  });
+  const csv = '\uFEFF' + linhas.join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const dataHoje = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `ronda_mina_${dataHoje}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  mostrarToast('CSV exportado ✓ — use "Exportar fotos (.zip)" para baixar as imagens com os mesmos nomes de arquivo.');
+}
+
+// ============================================================
+// MODAL DE EXPORTAÇÃO
+// ============================================================
+function abrirModalExportar(){
+  try {
+    const elProgresso = document.getElementById('progressoExportacao');
+    const elModal = document.getElementById('modalExportar');
+    if (!elProgresso || !elModal) {
+      mostrarToast('Erro ao abrir exportação: elemento não encontrado na tela.');
+      return;
+    }
+    elProgresso.innerHTML = '';
+    elModal.classList.add('show');
+  } catch (e) {
+    mostrarToast('Erro ao abrir exportação: ' + e.message);
+  }
+}
+function fecharModalExportar(){
+  document.getElementById('modalExportar').classList.remove('show');
+}
+
+function mostrarProgressoExportacao(label, percentual){
+  const cont = document.getElementById('progressoExportacao');
+  cont.innerHTML = `
+    <div class="progresso-bar-wrap">
+      ${label}
+      <div class="progresso-bar-track"><div class="progresso-bar-fill" style="width:${percentual}%"></div></div>
+    </div>
+  `;
+}
+function limparProgressoExportacao(){
+  document.getElementById('progressoExportacao').innerHTML = '';
+}
+
+// ============================================================
+// EXPORTAR FOTOS (.zip) — para anexar/linkar junto da planilha do Power BI
+// ============================================================
+async function exportarFotosZip(){
+  const totalFotos = registros.reduce((soma, r) => soma + (r.foto_ids ? r.foto_ids.length : 0), 0);
+  if (totalFotos === 0) { mostrarToast('Nenhuma foto registrada nesta ronda.'); return; }
+
+  mostrarProgressoExportacao('Preparando arquivo .zip das fotos...', 0);
+  const zip = new JSZip();
+  let processadas = 0;
+
+  for (const r of registros) {
+    const idsFotos = r.foto_ids || [];
+    for (const fotoId of idsFotos) {
+      const blob = await idbObterFoto(fotoId);
+      if (blob) {
+        zip.file(`registro_${r.id}_${fotoId}.jpg`, blob);
+      }
+      processadas++;
+      mostrarProgressoExportacao(`Compactando fotos... (${processadas}/${totalFotos})`, Math.round((processadas/totalFotos)*100));
+    }
+  }
+
+  mostrarProgressoExportacao('Gerando arquivo final...', 100);
+  const blobZip = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
+  const url = URL.createObjectURL(blobZip);
+  const a = document.createElement('a');
+  const dataHoje = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `fotos_ronda_mina_${dataHoje}.zip`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  limparProgressoExportacao();
+  mostrarToast(`✓ ${totalFotos} foto(s) exportada(s) em .zip`);
+}
+
+// ============================================================
+// EXPORTAR RELATÓRIO PDF — texto + fotos organizados, pronto para e-mail
+// ============================================================
+async function carregarBlobComoArrayBuffer(blob){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(blob);
+  });
+}
+
+async function exportarRelatorioPdf(){
+  if (registros.length === 0) { mostrarToast('Nenhum registro para exportar.'); return; }
+  if (typeof PDFLib === 'undefined') { mostrarToast('Não foi possível carregar o gerador de PDF. Verifique a conexão e tente novamente.'); return; }
+
+  mostrarProgressoExportacao('Montando relatório PDF...', 0);
+  const { PDFDocument, StandardFonts, rgb } = PDFLib;
+  const pdfDoc = await PDFDocument.create();
+  const fonteRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const fonteNegrito = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+  const LARGURA = 595.28, ALTURA = 841.89; // A4 em pontos
+  const MARGEM = 40;
+  const AZUL = rgb(0x0b/255, 0x25/255, 0x40/255);
+  const CINZA = rgb(0.35, 0.38, 0.42);
+  const corStatus = {
+    'Conforme': rgb(0.18,0.49,0.31),
+    'Parcial / Em execução': rgb(0.79,0.50,0.05),
+    'Não conforme': rgb(0.75,0.22,0.17),
+    'Não verificado / Não acessado': rgb(0.36,0.39,0.44)
+  };
+
+  // --- capa ---
+  let page = pdfDoc.addPage([LARGURA, ALTURA]);
+  page.drawRectangle({ x:0, y: ALTURA-160, width: LARGURA, height:160, color: AZUL });
+  page.drawText('Relatório de Ronda de Mina', { x: MARGEM, y: ALTURA-90, size:24, font: fonteNegrito, color: rgb(1,1,1) });
+  page.drawText('Infraestrutura e Drenagem', { x: MARGEM, y: ALTURA-115, size:13, font: fonteRegular, color: rgb(1,1,1) });
+
+  const datasRonda = [...new Set(registros.map(r => r.data_analise))].sort();
+  const responsaveis = [...new Set(registros.map(r => r.responsavel))];
+  let yCapa = ALTURA - 220;
+  const linhasCapa = [
+    `Período: ${datasRonda.map(d => d.split('-').reverse().join('/')).join(', ')}`,
+    `Responsável(eis): ${responsaveis.join(', ')}`,
+    `Total de registros: ${registros.length}`,
+    `Total de fotos: ${registros.reduce((s,r)=>s+(r.foto_ids?r.foto_ids.length:0),0)}`,
+    `Gerado em: ${new Date().toLocaleString('pt-BR')}`
+  ];
+  linhasCapa.forEach(linha => {
+    page.drawText(linha, { x: MARGEM, y: yCapa, size:11, font: fonteRegular, color: CINZA });
+    yCapa -= 20;
+  });
+
+  // resumo por status
+  yCapa -= 16;
+  page.drawText('Resumo por situação encontrada', { x: MARGEM, y: yCapa, size:12, font: fonteNegrito, color: AZUL });
+  yCapa -= 20;
+  const contagemStatus = {};
+  registros.forEach(r => { contagemStatus[r.status_campo] = (contagemStatus[r.status_campo]||0)+1; });
+  Object.entries(contagemStatus).forEach(([status, qtd]) => {
+    page.drawCircle({ x: MARGEM+4, y: yCapa+4, size:4, color: corStatus[status] || CINZA });
+    page.drawText(`${status}: ${qtd}`, { x: MARGEM+16, y: yCapa, size:10.5, font: fonteRegular, color: CINZA });
+    yCapa -= 18;
+  });
+
+  // --- uma página por registro ---
+  let processados = 0;
+  for (const r of registros) {
+    page = pdfDoc.addPage([LARGURA, ALTURA]);
+    let y = ALTURA - MARGEM;
+
+    page.drawRectangle({ x:0, y: y-2, width: LARGURA, height:46, color: AZUL });
+    page.drawText(r.atividade.length > 70 ? r.atividade.slice(0,70)+'…' : r.atividade, { x: MARGEM, y: y-22, size:13, font: fonteNegrito, color: rgb(1,1,1), maxWidth: LARGURA-2*MARGEM });
+    y -= 60;
+
+    const corBadge = corStatus[r.status_campo] || CINZA;
+    page.drawRectangle({ x: MARGEM, y: y-4, width: 14, height:14, color: corBadge });
+    page.drawText(r.status_campo, { x: MARGEM+20, y: y, size:11, font: fonteNegrito, color: corBadge });
+    y -= 26;
+
+    const camposInfo = [
+      [`Data/hora`, `${r.data_analise.split('-').reverse().join('/')} ${r.hora_analise||''}`],
+      [`Área`, r.area || '—'],
+      [`Responsável`, r.responsavel],
+      [`Código`, r.codigo_atividade],
+      [`Origem`, r.origem_atividade || '—'],
+      [`Prioridade`, r.prioridade || '—'],
+      [`Próximo plano`, r.incluir_proximo_plano]
+    ];
+
+    // desenha um cartão de fundo levemente cinza por trás dos campos, para destacar visualmente
+    const alturaCartaoInfo = camposInfo.length * 16 + 12;
+    page.drawRectangle({ x: MARGEM-8, y: y - alturaCartaoInfo + 10, width: LARGURA - 2*MARGEM + 16, height: alturaCartaoInfo, color: rgb(0.97,0.98,0.99), borderColor: rgb(0.88,0.90,0.93), borderWidth: 1 });
+    y -= 6;
+    camposInfo.forEach(([label, valor]) => {
+      page.drawText(`${label}:`, { x: MARGEM, y, size:9.5, font: fonteNegrito, color: CINZA });
+      page.drawText(String(valor), { x: MARGEM+105, y, size:9.5, font: fonteRegular, color: rgb(0.1,0.1,0.1), maxWidth: LARGURA-2*MARGEM-105 });
+      y -= 16;
+    });
+    y -= 8;
+
+    if (r.observacoes) {
+      y -= 6;
+      page.drawText('Observações:', { x: MARGEM, y, size:9.5, font: fonteNegrito, color: CINZA });
+      y -= 14;
+      const palavras = r.observacoes.split(' ');
+      let linhaAtual = '';
+      const larguraMax = LARGURA - 2*MARGEM;
+      for (const palavra of palavras) {
+        const teste = linhaAtual ? linhaAtual + ' ' + palavra : palavra;
+        if (fonteRegular.widthOfTextAtSize(teste, 9.5) > larguraMax) {
+          page.drawText(linhaAtual, { x: MARGEM, y, size:9.5, font: fonteRegular, color: rgb(0.1,0.1,0.1) });
+          y -= 13;
+          linhaAtual = palavra;
+        } else {
+          linhaAtual = teste;
+        }
+      }
+      if (linhaAtual) { page.drawText(linhaAtual, { x: MARGEM, y, size:9.5, font: fonteRegular, color: rgb(0.1,0.1,0.1) }); y -= 13; }
+    }
+
+    y -= 14;
+    const idsFotos = r.foto_ids || [];
+    if (idsFotos.length > 0) {
+      page.drawText(`Registro fotográfico (${idsFotos.length})`, { x: MARGEM, y, size:10, font: fonteNegrito, color: AZUL });
+      y -= 10;
+
+      const colunas = 2;
+      const gap = 12;
+      const larguraFoto = (LARGURA - 2*MARGEM - gap) / colunas;
+      const alturaFoto = larguraFoto * 0.72;
+      let coluna = 0;
+      let xFoto = MARGEM;
+
+      for (const fotoId of idsFotos) {
+        const blob = await idbObterFoto(fotoId);
+        if (!blob) continue;
+        const bytes = await carregarBlobComoArrayBuffer(blob);
+        let imagemEmbed;
+        try { imagemEmbed = await pdfDoc.embedJpg(bytes); }
+        catch(e) { try { imagemEmbed = await pdfDoc.embedPng(bytes); } catch(e2) { continue; } }
+
+        if (y - alturaFoto < MARGEM) {
+          page = pdfDoc.addPage([LARGURA, ALTURA]);
+          y = ALTURA - MARGEM;
+          coluna = 0; xFoto = MARGEM;
+        }
+
+        page.drawImage(imagemEmbed, { x: xFoto, y: y - alturaFoto, width: larguraFoto, height: alturaFoto });
+
+        coluna++;
+        if (coluna >= colunas) {
+          coluna = 0; xFoto = MARGEM; y -= (alturaFoto + gap);
+        } else {
+          xFoto += larguraFoto + gap;
+        }
+      }
+    }
+
+    processados++;
+    mostrarProgressoExportacao(`Montando relatório... (${processados}/${registros.length} registros)`, Math.round((processados/registros.length)*100));
+  }
+
+  const pdfBytes = await pdfDoc.save();
+  const blobPdf = new Blob([pdfBytes], { type: 'application/pdf' });
+  const url = URL.createObjectURL(blobPdf);
+  const dataHoje = new Date().toISOString().slice(0,10);
+  const nomeArquivo = `relatorio_ronda_mina_${dataHoje}.pdf`;
+
+  limparProgressoExportacao();
+
+  // tenta abrir o menu de compartilhar nativo (permite enviar direto por e-mail/whatsapp);
+  // se o navegador não suportar Web Share com arquivos, cai no download normal.
+  const arquivoPdf = new File([blobPdf], nomeArquivo, { type: 'application/pdf' });
+  if (navigator.canShare && navigator.canShare({ files: [arquivoPdf] })) {
+    try {
+      await navigator.share({
+        files: [arquivoPdf],
+        title: 'Relatório de Ronda de Mina',
+        text: 'Relatório de ronda de infraestrutura e drenagem de mina.'
+      });
+      mostrarToast('✓ Relatório PDF pronto para compartilhar');
+      return;
+    } catch (e) { /* usuário cancelou o compartilhamento ou falhou; cai no download */ }
+  }
+
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = nomeArquivo;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  mostrarToast('✓ Relatório PDF gerado — anexe-o no seu app de e-mail');
+}
+
+function mostrarToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function mostrarToastErro(msg){
+  const t = document.getElementById('toast');
+  t.textContent = '⚠ ' + msg;
+  t.style.background = '#c0392b';
+  t.classList.add('show');
+  setTimeout(() => {
+    t.classList.remove('show');
+    t.style.background = '';
+  }, 6000); // erros ficam visíveis por mais tempo, para dar tempo de ler/fotografar a mensagem
+}
+
+// ============================================================
+// CAPTURA GLOBAL DE ERROS — qualquer falha de JS em qualquer lugar do app
+// aparece como aviso na tela, em vez de simplesmente "não fazer nada" silenciosamente.
+// Isso é essencial para diagnosticar problemas em aparelhos que não temos em mãos.
+// ============================================================
+window.addEventListener('error', (event) => {
+  try { mostrarToastErro('Erro no app: ' + (event.message || 'falha desconhecida')); } catch(e) {}
+});
+window.addEventListener('unhandledrejection', (event) => {
+  try {
+    const motivo = event.reason && event.reason.message ? event.reason.message : String(event.reason);
+    mostrarToastErro('Erro no app: ' + motivo);
+  } catch(e) {}
+});
+
+// ============================================================
+// IMPORTAÇÃO DE ATIVIDADES (CSV do próximo plano)
+// ============================================================
+let previewImportTemp = null;
+
+function abrirModalImport(){
+  atualizarStatusListaModal();
+  document.getElementById('modalImport').classList.add('show');
+  resetAreaImport();
+}
+function fecharModalImport(){
+  document.getElementById('modalImport').classList.remove('show');
+  resetAreaImport();
+}
+function resetAreaImport(){
+  document.getElementById('areaErroImport').innerHTML = '';
+  document.getElementById('areaPreviewImport').innerHTML = '';
+  document.getElementById('botoesConfirmaImport').style.display = 'none';
+  document.getElementById('inputCsvAtividades').value = '';
+  previewImportTemp = null;
+}
+function atualizarStatusListaModal(){
+  document.getElementById('qtdAtividadesAtual').textContent = atividadesAtuais.length;
+  document.getElementById('origemListaAtual').textContent =
+    origemListaAtividades === 'importada' ? '(lista importada)' : '(lista padrão do plano original)';
+}
+
+document.getElementById('inputCsvAtividades').addEventListener('change', (ev) => {
+  const file = ev.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => processarCsvAtividades(e.target.result);
+  reader.onerror = () => mostrarErroImport('Não foi possível ler o arquivo. Tente novamente.');
+  reader.readAsText(file, 'UTF-8');
+});
+
+function mostrarErroImport(msg){
+  document.getElementById('areaErroImport').innerHTML = `<div class="erro-import">⚠ ${msg}</div>`;
+  document.getElementById('areaPreviewImport').innerHTML = '';
+  document.getElementById('botoesConfirmaImport').style.display = 'none';
+}
+
+function processarCsvAtividades(texto){
+  document.getElementById('areaErroImport').innerHTML = '';
+
+  // remove BOM se presente e separa linhas não vazias
+  const limpo = texto.replace(/^\uFEFF/, '');
+  const linhas = limpo.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+
+  if (linhas.length < 2) {
+    mostrarErroImport('O arquivo parece vazio ou só tem cabeçalho.');
+    return;
+  }
+
+  // detecta separador (; ou ,) pela primeira linha
+  const sep = linhas[0].includes(';') ? ';' : ',';
+  const cabecalho = linhas[0].split(sep).map(h => h.trim().toLowerCase());
+
+  const colunasEsperadas = ['area','codigo','atividade','frota','status_plano','prioridade'];
+  const faltando = colunasEsperadas.filter(c => !cabecalho.includes(c));
+  if (faltando.length > 0) {
+    mostrarErroImport(`Cabeçalho inválido. Faltam as colunas: ${faltando.join(', ')}. O arquivo deve ter: ${colunasEsperadas.join(';')}`);
+    return;
+  }
+
+  const idx = {};
+  colunasEsperadas.forEach(c => idx[c] = cabecalho.indexOf(c));
+
+  const novasAtividades = [];
+  for (let i = 1; i < linhas.length; i++) {
+    const campos = linhas[i].split(sep);
+    const area = (campos[idx.area] || '').trim();
+    const codigo = (campos[idx.codigo] || '').trim();
+    const atividade = (campos[idx.atividade] || '').trim();
+    if (!area || !codigo || !atividade) continue; // ignora linha incompleta
+    novasAtividades.push({
+      area, codigo, atividade,
+      frota: (campos[idx.frota] || '-').trim(),
+      status_plano: (campos[idx.status_plano] || 'Programada').trim(),
+      prioridade: (campos[idx.prioridade] || 'Normal').trim()
+    });
+  }
+
+  if (novasAtividades.length === 0) {
+    mostrarErroImport('Nenhuma atividade válida encontrada nas linhas do arquivo.');
+    return;
+  }
+
+  previewImportTemp = novasAtividades;
+  renderPreviewImport(novasAtividades);
+}
+
+function renderPreviewImport(lista){
+  const areas = [...new Set(lista.map(a => a.area))];
+  let html = `<div class="lista-status"><div><b>${lista.length}</b> atividades encontradas em <b>${areas.length}</b> área(s)</div></div>`;
+  html += '<div class="preview-box">';
+  lista.slice(0, 8).forEach(a => {
+    html += `<div class="preview-row"><b>${a.area}</b> · ${a.codigo} — ${a.atividade}</div>`;
+  });
+  if (lista.length > 8) html += `<div class="preview-row" style="text-align:center;color:var(--cinza-600);">+ ${lista.length - 8} atividade(s)...</div>`;
+  html += '</div>';
+  document.getElementById('areaPreviewImport').innerHTML = html;
+  document.getElementById('botoesConfirmaImport').style.display = 'flex';
+}
+
+function cancelarPreviewImport(){
+  resetAreaImport();
+}
+
+function confirmarImport(){
+  if (!previewImportTemp) return;
+  atividadesAtuais = previewImportTemp;
+  origemListaAtividades = 'importada';
+  localStorage.setItem('ronda_atividades_importadas', JSON.stringify(atividadesAtuais));
+  popularSelectAtividades();
+  atualizarStatusListaModal();
+  resetAreaImport();
+  mostrarToast(`✓ Lista atualizada: ${atividadesAtuais.length} atividades importadas`);
+}
+
+function restaurarListaPadrao(){
+  if (!confirm('Restaurar a lista padrão (atividades do plano original)? A lista importada será descartada neste dispositivo.')) return;
+  localStorage.removeItem('ronda_atividades_importadas');
+  atividadesAtuais = ATIVIDADES_PLANO_PADRAO;
+  origemListaAtividades = 'padrao';
+  popularSelectAtividades();
+  atualizarStatusListaModal();
+  mostrarToast('Lista padrão restaurada.');
+}
+
+function exportarCsvAtividadesAtuais(){
+  const headers = ['area','codigo','atividade','frota','status_plano','prioridade'];
+  const linhas = [headers.join(';')];
+  atividadesAtuais.forEach(a => {
+    linhas.push(headers.map(h => (a[h] ?? '').toString().replace(/;/g,',').replace(/\n/g,' ')).join(';'));
+  });
+  const csv = '\uFEFF' + linhas.join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'atividades_plano_atual.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  mostrarToast('CSV de atividades exportado ✓');
+}
+
+// ============================================================
+// PWA: REGISTRO DO SERVICE WORKER + PROMPT DE INSTALAÇÃO
+// ============================================================
+let swRegistration = null;
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', async () => {
+    try {
+      swRegistration = await navigator.serviceWorker.register('./service-worker.js');
+
+      // se já existe um novo service worker esperando (baixado em visita anterior), avisa agora
+      if (swRegistration.waiting) {
+        mostrarAvisoNovaVersao();
+      }
+
+      // detecta quando uma nova versão termina de baixar e fica pronta para ativar
+      swRegistration.addEventListener('updatefound', () => {
+        const novoWorker = swRegistration.installing;
+        if (!novoWorker) return;
+        novoWorker.addEventListener('statechange', () => {
+          if (novoWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            mostrarAvisoNovaVersao();
+          }
+        });
+      });
+
+      // força uma checagem de atualização agora, e sempre que o app volta ao primeiro plano
+      // (importante no iOS, que verifica isso com bem menos frequência que o Android)
+      swRegistration.update().catch(() => {});
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          swRegistration.update().catch(() => {});
+        }
+      });
+    } catch (e) { /* sem service worker, app continua funcionando normalmente, só sem modo offline */ }
+  });
+}
+
+function mostrarAvisoNovaVersao(){
+  if (document.getElementById('avisoNovaVersao')) return; // já está visível
+  const aviso = document.createElement('div');
+  aviso.id = 'avisoNovaVersao';
+  aviso.className = 'install-banner show';
+  aviso.style.bottom = '80px';
+  aviso.innerHTML = `
+    <div class="install-icon">🔄</div>
+    <div class="install-text">Uma versão mais nova do app está disponível.</div>
+    <div class="install-actions">
+      <button class="btn-instalar-sim" onclick="aplicarAtualizacao()">Atualizar</button>
+      <button class="btn-instalar-nao" onclick="document.getElementById('avisoNovaVersao').remove()">Depois</button>
+    </div>
+  `;
+  document.body.appendChild(aviso);
+}
+
+function aplicarAtualizacao(){
+  if (swRegistration && swRegistration.waiting) {
+    swRegistration.waiting.postMessage({ tipo: 'ATIVAR_AGORA' });
+  }
+  // recarrega a página assim que o novo service worker assumir o controle
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    window.location.reload();
+  });
+}
+
+// --- Android/Chrome: captura o evento nativo de instalação ---
+let deferredInstallEvent = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallEvent = e;
+  mostrarBannerInstalacao('android');
+});
+
+window.addEventListener('appinstalled', () => {
+  esconderBannerInstalacao();
+  mostrarToast('App instalado ✓');
+});
+
+// --- iOS/Safari: não existe evento nativo, então detectamos a plataforma
+//     e mostramos instruções de "Adicionar à Tela de Início" manualmente ---
+function isIOS(){
+  return /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+         (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+function isStandalone(){
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+
+function mostrarBannerInstalacao(plataforma){
+  if (isStandalone()) return; // já está instalado, não mostra nada
+  if (localStorage.getItem('ronda_banner_instalacao_dispensado') === 'true') return;
+  const banner = document.getElementById('bannerInstalacao');
+  banner.dataset.plataforma = plataforma;
+  if (plataforma === 'ios') {
+    document.getElementById('bannerInstalacaoTexto').textContent =
+      'Toque em Compartilhar (□↑) e depois em "Adicionar à Tela de Início" para instalar o app.';
+    document.getElementById('btnInstalarAgora').style.display = 'none';
+  } else {
+    document.getElementById('bannerInstalacaoTexto').textContent =
+      'Instale o app na tela inicial para acessar a ronda com 1 toque, mesmo sem internet.';
+    document.getElementById('btnInstalarAgora').style.display = 'inline-block';
+  }
+  banner.classList.add('show');
+}
+function esconderBannerInstalacao(){
+  document.getElementById('bannerInstalacao').classList.remove('show');
+}
+function dispensarBannerInstalacao(){
+  localStorage.setItem('ronda_banner_instalacao_dispensado', 'true');
+  esconderBannerInstalacao();
+}
+async function instalarAgora(){
+  if (!deferredInstallEvent) return;
+  deferredInstallEvent.prompt();
+  const resultado = await deferredInstallEvent.userChoice;
+  deferredInstallEvent = null;
+  esconderBannerInstalacao();
+}
+
+// dispara a checagem do iOS no carregamento (Android é tratado pelo evento beforeinstallprompt)
+(function checarInstalacaoIOS(){
+  if (isIOS() && !isStandalone()) {
+    setTimeout(() => mostrarBannerInstalacao('ios'), 1200);
+  }
+})();
+
+// inicializa data/hora atuais
+(function init(){
+  const now = new Date();
+  document.getElementById('campoData').value = now.toISOString().slice(0,10);
+  document.getElementById('campoHora').value = now.toTimeString().slice(0,5);
+  atualizarContador();
+  iniciarCapturaGps();
+})();
+
+document.getElementById('campoData').addEventListener('change', atualizarContador);
+</script>
+
+</body>
+</html>
